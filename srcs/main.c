@@ -23,53 +23,36 @@ unsigned short checksum(void *b, int len)
 	return result;
 }
 
-void display_msg(int bytes)
+void display_msg(void *buf, int bytes)
 {
-	printf("%d\n", bytes);
+	struct iphdr		*ip;
+
+	ip = buf;
+	printf("IPv%d: size=%d, protocol=%d TTL=%d\n",
+	ip->version, bytes, ip->protocol, ip->ttl);
 }
 
-void manager_msg(int sock)
+void	ping(char *addrip)
 {
-	struct sockaddr_in	addr;
-	unsigned char		buf[PACKETSIZE];
-	// socklen_t			len;
-	int					bytes;
-	t_ping				packet;
-	int					i;
+	int 					val;
+	int						sock;
+	int						i;
+	int						bytes;
+	t_ping					packet;
+	t_addrinfo				*info;
+	t_sockaddrin			addr;
+	// struct timeval			start;
+	// struct timeval			end;
+	unsigned char			buf[PACKETSIZE];
+	// char					str[INET_ADDRSTRLEN];
 
-	ft_bzero(buf, sizeof(buf));
+	val = 255;
 	packet.id = 0;
 	packet.head.type = 8;
 	packet.head.code = getpid();
 	packet.head.checksum = checksum(&bytes, PACKETSIZE);
 	addr.sin_family = AF_INET;
 
-	i = 0;
-	while ( i < 16 )
-	{
-		packet.msg[i] = i + '0';
-		i++;
-	}
-	packet.msg[i] = 0;
-
-	if ( sendto(sock, &packet, sizeof(packet), 0, (struct sockaddr*)&addr, sizeof(addr)) <= 0 )
-		perror("sendto");
-
-	// len = sizeof(addr);
-	// bytes = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr*)&addr, &len);
-	// if ( bytes < 0 )
-	// 	perror("recvfrom");
-	// else
-	// 	display_msg(bytes);
-}
-
-void create(char *addrip)
-{
-	int 					val;
-	int						sock;
-	struct addrinfo			*info;
-
-	val = 255;
 	if (getaddrinfo(addrip, NULL, NULL, &info) != 0)
 	{
 		printf("cannot provide addrinfo\n");
@@ -77,7 +60,7 @@ void create(char *addrip)
 	}
 	if ((sock = socket(PF_INET, SOCK_RAW, 1)) == -1)
 	{
-		printf("Error socket\n");
+		printf("Error socket in ping\n");
 		exit(-1);
 	}
 	if ( setsockopt(sock, SOL_SOCKET, IP_TTL, (void*)&val, sizeof(val)) != 0)
@@ -85,15 +68,51 @@ void create(char *addrip)
 		printf("Error setsockopt\n");
 		exit (-1);
 	}
-	manager_msg(sock);
+
+	// if (inet_pton(AF_INET, addrip, &(addr.sin_addr)) == -1)
+	// {
+	// 	printf("Error : inet_pton\n");
+	// 	exit(-1);
+	// }
+
+	// inet_ntop(AF_INET, &(addr.sin_addr), str, INET_ADDRSTRLEN);
+	// if (str != NULL)
+	// 	printf("%s\n", str);
+	while(1)
+	{
+		i = 0;
+		while ( i < 16 )
+		{
+			packet.msg[i] = i + '0';
+			i++;
+		}
+
+		// gettimeofday(&start, NULL);
+		if ( sendto(sock, &packet, sizeof(packet), 0, (struct sockaddr*)&addr, sizeof(addr)) <= 0 )
+			perror("sendto");
+
+		ft_bzero(buf, sizeof(buf));
+		printf("ok");
+
+		bytes = recvfrom(sock, &buf, sizeof(buf), 0, (struct sockaddr*)&info->ai_addr, &(info->ai_addrlen));
+		// gettimeofday(&end, NULL);
+
+		if ( bytes < 0 )
+			perror("recvfrom");
+		else
+			display_msg(buf, bytes);
+		packet.id++;
+		sleep(1);
+	}
 }
+
 
 int main(int argc, char **argv)
 {
 	signal(SIGCHLD, SIG_IGN);
 	if (argc  >= 2)
 	{
-		create(argv[1]);
+		ping(argv[1]);
 	}
 	else
 		ft_usage();

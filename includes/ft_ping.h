@@ -9,6 +9,7 @@
 # include <signal.h>
 # include <sys/time.h>
 # include <netdb.h>
+# include <linux/ip.h>
 # include "../libft/libft.h"
 
 # define PACKETSIZE	64
@@ -26,5 +27,8 @@ typedef struct			s_ping
 	uint16_t			id;
 	char				msg[16];
 }						t_ping;
+
+typedef struct addrinfo		t_addrinfo;
+typedef struct sockaddr_in	t_sockaddrin;
 
 #endif
