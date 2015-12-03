@@ -4,7 +4,7 @@ void sighandler(int);
 
 void ft_usage()
 {
-	printf("Usage : [-h help], [-v Verbose Output], destination" );
+	printf("Usage : [-h help + v Verbose Output], destination" );
 }
 
 unsigned short checksum(void *b, int len)
@@ -126,13 +126,69 @@ void sighandler(int num)
 	exit(1);
 }
 
+int		optionsParamsIsValid(char *str)
+{
+	int		i;
+	int		check;
+
+	check = 0;
+	i = 0;
+	while (str[i] != '\0')
+	{
+		if (str[i] == '-' || str[i] == 'h' || str[i] == 'v')
+			check++;
+		i++;
+	}
+	if (check == i)
+		return (1);
+	return (0);
+}
+
+int		optionsIsHelp(char *str)
+{
+	int		i;
+
+	i = 0;
+	while (str[i] != '\0')
+	{
+		if (str[i] == 'h')
+			return (1);
+		i++;
+	}
+	return (0);
+}
+
 int main(int argc, char **argv)
 {
 	signal(SIGINT, sighandler);
-	if (argc  >= 2)
+
+	if (argc == 2)
 	{
 		ping.host = argv[1];
 		ft_ping();
+	}
+	else if (argc == 3)
+	{
+		if (argv[1][0] == '-')
+		{
+			if (optionsParamsIsValid(argv[1]) == 0)
+			{
+				ft_usage();
+				return (0);
+			}
+			if (optionsIsHelp(argv[1]) == 1)
+			{
+				ft_usage();
+				return (0);
+			}
+			ping.host = argv[2];
+			ft_ping();
+		}
+		else
+		{
+			ft_usage();
+			return (0);
+		}
 	}
 	else
 		ft_usage();
